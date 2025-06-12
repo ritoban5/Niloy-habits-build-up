@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Pure Tracker</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+    }
+    .habit {
+      background: #fff;
+      padding: 10px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .habit input, .habit textarea {
+      margin-top: 5px;
+      width: 100%;
+    }
+    .habit-time {
+      margin-top: 5px;
+    }
+    .habit-comment {
+      font-size: 0.9em;
+      color: #666;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      margin-top: 10px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <h1>📋 My Pure Tracker</h1>
+  <div>
+    <input type="text" id="habitName" placeholder="New Habit" />
+    <input type="time" id="habitTime" />
+    <textarea id="habitComment" placeholder="Comment (optional)"></textarea>
+    <button onclick="addHabit()">Add Habit</button>
+  </div>
+  <hr/>
+  <div id="habitList"></div>
+
+  <audio id="alertSound" src="https://www.soundjay.com/buttons/sounds/button-3.mp3"></audio>
+
+  <script>
+    let habits = JSON.parse(localStorage.getItem('habits') || '[]');
+
+    function addHabit() {
+      const name = document.getElementById('habitName').value;
+      const time = document.getElementById('habitTime').value;
+      const comment = document.getElementById('habitComment').value;
+      if (!name || !time) return alert('Habit name and time are required');
+
+      const habit = { name, time, comment, done: false };
+      habits.push(habit);
+      saveHabits();
+      renderHabits();
+
+      document.getElementById('habitName').value = '';
+      document.getElementById('habitTime').value = '';
+      document.getElementById('habitComment').value = '';
+    }
+
+    function renderHabits() {
+      const container = document.getElementById('habitList');
+      container.innerHTML = '';
+      habits.forEach((habit, index) => {
+        const habitDiv = document.createElement('div');
+        habitDiv.className = 'habit';
+
+        habitDiv.innerHTML = `
+          <strong>${habit.name}</strong> - <em>${habit.time}</em>
+          <br/>
+          <label><input type="checkbox" onchange="toggleDone(${index})" ${habit.done ? 'checked' : ''}/> Done</label>
+          <p class="habit-comment">${habit.comment}</p>
+        `;
+
+        container.appendChild(habitDiv);
+      });
+    }
+
+    function toggleDone(index) {
+      habits[index].done = !habits[index].done;
+      saveHabits();
+    }
+
+    function checkReminders() {
+      const now = new Date();
+      const currentTime = now.toTimeString().slice(0, 5);
+
+      habits.forEach((habit) => {
+        if (habit.time === currentTime && !habit.done) {
+          notifyUser(habit);
+        }
+      });
+    }
+
+    function notifyUser(habit) {
+      if (Notification.permission === 'granted') {
+        new Notification(`Reminder: ${habit.name}`, {
+          body: habit.comment || 'Time to complete your habit!',
+        });
+      }
+      document.getElementById('alertSound').play();
+    }
+
+    function saveHabits() {
+      localStorage.setItem('habits', JSON.stringify(habits));
+    }
+
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+
+    renderHabits();
+    setInterval(checkReminders, 60000); // check every minute
+  </script>
+</body>
+</html>
