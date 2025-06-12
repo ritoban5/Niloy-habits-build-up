@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Niloy's Habit Tracker</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .habit { border: 1px solid #ccc; padding: 10px; margin-bottom: 10px; border-radius: 8px; }
+    .reminder-time { width: 150px; }
+    .comment { width: 100%; margin-top: 5px; }
+  </style>
+</head>
+<body>
+  <h1>🎯 Niloy's Habit Tracker</h1>
+  <div id="habitList"></div>
+  <input type="text" id="newHabit" placeholder="Add new habit" />
+  <button onclick="addHabit()">Add Habit</button>
+
+  <script>
+    let habits = JSON.parse(localStorage.getItem('habits')) || [];
+
+    function renderHabits() {
+      const habitList = document.getElementById('habitList');
+      habitList.innerHTML = '';
+      habits.forEach((habit, index) => {
+        const div = document.createElement('div');
+        div.className = 'habit';
+        div.innerHTML = \`
+          <strong>\${habit.name}</strong><br>
+          Reminder: <input type="time" class="reminder-time" value="\${habit.time}" onchange="updateTime(\${index}, this.value)" />
+          <br>Comment: <textarea class="comment" oninput="updateComment(\${index}, this.value)">\${habit.comment || ''}</textarea>
+          <br><button onclick="removeHabit(\${index})">❌ Remove</button>
+        \`;
+        habitList.appendChild(div);
+      });
+    }
+
+    function addHabit() {
+      const name = document.getElementById('newHabit').value;
+      if (!name) return;
+      habits.push({ name, time: '', comment: '' });
+      document.getElementById('newHabit').value = '';
+      saveHabits();
+    }
+
+    function removeHabit(index) {
+      habits.splice(index, 1);
+      saveHabits();
+    }
+
+    function updateTime(index, time) {
+      habits[index].time = time;
+      saveHabits();
+    }
+
+    function updateComment(index, comment) {
+      habits[index].comment = comment;
+      saveHabits();
+    }
+
+    function saveHabits() {
+      localStorage.setItem('habits', JSON.stringify(habits));
+      renderHabits();
+    }
+
+    function checkReminders() {
+      const now = new Date();
+      const currentTime = now.toTimeString().slice(0, 5);
+      habits.forEach(habit => {
+        if (habit.time === currentTime) {
+          showNotification("Don't forget to do: " + habit.name + (habit.comment ? " — " + habit.comment : ''));
+        }
+      });
+    }
+
+    function showNotification(message) {
+      if (Notification.permission === 'granted') {
+        new Notification(message);
+        const audio = new Audio("https://notificationsounds.com/storage/sounds/file-sounds-1151-pristine.mp3");
+        audio.play();
+      }
+    }
+
+    if (Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+
+    setInterval(checkReminders, 60000);
+    renderHabits();
+  </script>
+</body>
+</html>
